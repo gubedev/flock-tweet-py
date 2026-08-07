@@ -1,57 +1,106 @@
 ---
 name: code-auditing
-description: Adversarial review — spec vs code, anti-patterns, dead code, security gaps.
-version: 1.0.0
+description: Adversarial review — spec vs code, architecture compliance, dead code, security gaps, and coverage check.
+version: 2.0.0
 ---
 
 # Code Auditing Skill
 
-Use after completing all implementation phases (FASE 18 — SDD Archive). Compares the delivered code against the openspec specs and the challenge criteria.
+Comprehensive adversarial review comparing the delivered code against the project specs, architecture rules, and challenge criteria.
 
-## Audit Phases
+## When to Use
 
-### Phase 0: Setup
-1. Read `openspec/changes/01-twitter-clone/proposal.md` and `design.md` — understand the spec.
-2. Read `ignore/plans/challenge-plan.md` — understand the improvement targets over v2.
-3. Run existing tests as baseline: `pytest --cov=app` and `npm test`.
+- Before merging any phase branch (lightweight per-phase check)
+- At the end of all implementation phases (full audit before SDD archive)
+- When a layer violation or anti-pattern is suspected
 
-### Phase 1: Spec vs Code
-For each capability in `proposal.md`:
-- Verify it is implemented in the code.
-- Verify it is covered by at least one test.
-- Flag any spec capability with no implementation or no test.
+---
 
-### Phase 2: v2 Bug Fixes Verification
-Verify each improvement listed in `challenge-plan.md` was actually fixed:
-- [ ] Reply notifications dispatched from `CreateTweetUseCase`
-- [ ] `followers_count` computed via subquery (not hardcoded 0)
-- [ ] `entrypoint.sh` has no `--reload` in production
-- [ ] Rate limiter uses `X-Forwarded-For`
-- [ ] No access token in `localStorage`
-- [ ] Password min 8 chars validated in schema
-- [ ] `GET /auth/me` uses `GetCurrentUserUseCase`
-- [ ] `LocalStorage` injected via `Depends()`
+## Phase 0: Setup
 
-### Phase 3: File-by-File Analysis
-For each file, check:
-- Dead code (unused functions, imports, variables)
-- Anti-patterns (N+1 queries, hardcoded values, direct repo access in handlers)
-- Security issues (unvalidated input, missing auth checks, XSS surfaces)
-- Layer violations (domain importing infrastructure, handlers bypassing use cases)
+1. Read `openspec/specs/product/` — understand what each feature must do.
+2. Read `openspec/specs/tech/architecture/spec.md` and `openspec/specs/tech/database/spec.md` — understand the structural rules.
+3. Read `openspec/changes/*/proposal.md` and `design.md` for the active change — understand intent and key design decisions.
+4. Run tests as baseline:
+   ```bash
+   rtk pytest --cov=app --cov-report=term-missing
+   rtk vitest run
+   ```
 
-### Phase 4: Coverage Check
-- `pytest --cov=app --cov-report=term-missing` → must be ≥ 85%.
-- List any uncovered lines that represent untested business logic.
+---
 
-### Phase 5: Report
+## Phase 1: Spec vs Code
 
-Verdict options:
+For each REQ item in `openspec/specs/product/`:
+- Verify the scenario's happy path is implemented.
+- Verify each error scenario has a corresponding test.
+- Flag: REQ with no implementation, REQ with no test, test with no REQ.
+
+---
+
+## Phase 2: Architecture Compliance
+
+Verify the rules in `openspec/specs/tech/architecture/spec.md` are enforced:
+
+- **Domain purity**: no third-party imports in `app/domain/`.
+- **Application purity**: no SQLAlchemy sessions or FastAPI imports in `app/application/`.
+- **DI contract**: no repository instantiation inside routers; all wired via `Depends()`.
+- **mappers.py**: no `_to_entity()` methods inside individual repositories.
+- **No localStorage**: access token never written to `localStorage` or `sessionStorage`.
+- **Feature isolation**: no cross-feature imports in `frontend/src/features/`.
+
+Check each design decision in `design.md` — verify each is reflected in the code.
+
+---
+
+## Phase 3: File-by-File Analysis
+
+For each source file, check:
+
+**Dead code**
+- Unused imports, functions, variables.
+- Tools: `deadcode . --dry` (Python), `npx knip` (TypeScript).
+- Verify findings before reporting (dynamic imports, re-exports, entry points).
+
+**Anti-patterns**
+- N+1 queries (any loop that issues a DB call per iteration).
+- Hardcoded values (strings, numbers, URLs that should be env vars).
+- Direct repository access inside routers (bypasses use case layer).
+
+**Security**
+- Unvalidated user input reaching DB or filesystem.
+- Missing auth guards on protected endpoints.
+- Sensitive data in logs or error responses.
+- Rate limiting present on auth endpoints.
+
+**Async correctness**
+- Missing `await` on async calls.
+- Unhandled promise rejections (frontend).
+- SSE `EventSource` closed on unmount.
+
+---
+
+## Phase 4: Coverage Check
+
+```bash
+rtk pytest --cov=app --cov-report=term-missing
+```
+
+- Target: ≥ 85% backend coverage.
+- List uncovered lines that represent untested business logic (not boilerplate).
+- Frontend: verify unit tests cover optimistic update + rollback paths.
+
+---
+
+## Phase 5: Report
+
+**Verdict:**
 - **PASS** — all specs covered, no critical issues, coverage ≥ 85%.
-- **PASS WITH GAPS** — minor issues, no blockers, list gaps.
-- **FAIL** — critical issues or coverage < 85%. List what must be fixed before archiving.
+- **PASS WITH GAPS** — minor issues only, no blockers; list gaps with priority.
+- **FAIL** — critical issue or coverage < 85%; list what must be fixed before archiving.
 
-## Issue Priority
-- **Critical** — broken functionality, security vulnerability, spec not implemented
-- **High** — performance issue, layer violation
-- **Medium** — code quality, missing test coverage
-- **Low** — style, minor improvements
+**Issue priority:**
+- **Critical** — broken functionality, security vulnerability, spec requirement not implemented.
+- **High** — layer violation, N+1 query, missing auth guard.
+- **Medium** — code quality, missing edge case test, hardcoded value.
+- **Low** — style, minor improvement, dead import.

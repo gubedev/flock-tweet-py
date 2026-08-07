@@ -41,8 +41,8 @@ The Flock is a full-stack Twitter/X clone built as a technical challenge. It dem
 - Tweet detail: single tweet with its reply thread
 
 ### Replies
-- Reply to any tweet (`parent_id` set on the reply tweet)
-- Replies appear in the tweet's thread view; excluded from main timeline
+- Reply to any tweet via `POST /api/tweets/{id}/replies`
+- Replies appear in the tweet's thread view (`GET /api/tweets/{id}`); excluded from main timeline
 - `replies_count` on parent tweet increments atomically
 - Author of parent tweet receives a `reply` notification
 

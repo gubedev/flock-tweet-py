@@ -1,4 +1,4 @@
-# Design: Twitter Clone Challenge — The Flock
+# Design: Flock Tweet Bootstrap — The Flock
 
 ---
 
@@ -218,6 +218,19 @@ useEffect(() => {
   }
 }, [])  // only on mount, not on every render
 ```
+
+---
+
+## Upload Size Limits
+
+Two separate upload endpoints with different constraints:
+
+| Endpoint | Max size | Allowed extensions |
+|---|---|---|
+| `POST /api/uploads/image` (tweet image) | 10 MB | jpg, jpeg, png, gif, webp |
+| `POST /api/users/me/avatar` | 5 MB | jpg, jpeg, png |
+
+Avatar is more restrictive because it is displayed at small sizes and stored permanently on the user record. Tweet images support GIF and WebP for richer content.
 
 ---
 
