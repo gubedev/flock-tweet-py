@@ -1,6 +1,6 @@
-# Proposal: Twitter Clone Challenge — The Flock
+# Proposal: Flock Tweet Bootstrap — The Flock
 
-**Change ID**: 01-twitter-clone
+**Change ID**: 01-flock-tweet-bootstrap
 **Status**: in-progress
 **Started**: 2026-08-04
 
@@ -9,8 +9,6 @@
 ## Why
 
 The Flock is a technical challenge that evaluates full-stack development capability across five dimensions: functional correctness, testing rigor, code quality, development process, and documentation. The challenge requires building a Twitter/X clone from scratch with a backend API and a frontend SPA, demonstrating production-grade decisions at every layer.
-
-A prior implementation of this challenge (reference solution) scored 7.0/10 due to functional bugs (reply notifications never dispatched, `followers_count` hardcoded to 0, token stored in `localStorage`), production issues (`--reload` in Docker), and architectural violations (`GET /auth/me` bypassing the use case layer). This change builds the project correctly from the start, addressing all identified gaps.
 
 ---
 
@@ -24,7 +22,7 @@ A prior implementation of this challenge (reference solution) scored 7.0/10 due 
 - **Presentation layer**: FastAPI routers + Pydantic schemas; DI via `Depends()`.
 - **Security**: JWT access (15 min, in-memory) + refresh (7 days, httpOnly cookie). Rate limiting with `X-Forwarded-For`.
 
-### New System: Frontend (Next.js 15 + Feature-based)
+### New System: Frontend (Next.js 16 + Feature-based)
 
 - Feature modules: auth, tweets, users, search, notifications.
 - TanStack Query v5 for server state; Zustand for UI state only.

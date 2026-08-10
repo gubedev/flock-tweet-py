@@ -4,7 +4,7 @@
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 15 (App Router) + Tailwind v4 + shadcn/ui |
+| Frontend | Next.js 16 (App Router) + Tailwind v4 + shadcn/ui |
 | Backend | Python 3.12 + FastAPI 0.115 |
 | ORM | SQLAlchemy 2.0 async |
 | Migrations | Alembic |
